@@ -4,6 +4,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -246,8 +247,15 @@ func (m Model) View() string {
 			icon = stepDone.Render("✓")
 			line = id.Title()
 		case skipped:
-			icon = stepDone.Render("✓")
-			line = id.Title() + noteStyle.Render("  ("+st.note+")")
+			// "not selected" is a non-goal, not an achievement — render it
+			// dimmed; genuine already-done skips keep the checkmark.
+			if st.note == "not selected" {
+				icon = stepPend.Render("–")
+				line = stepPend.Render(id.Title()) + noteStyle.Render("  (not selected)")
+			} else {
+				icon = stepDone.Render("✓")
+				line = id.Title() + noteStyle.Render("  ("+st.note+")")
+			}
 		case failed:
 			icon = stepFail.Render("✗")
 			line = stepFail.Render(id.Title())
@@ -269,12 +277,25 @@ func (m Model) View() string {
 		b.WriteString("\n  " + stepFail.Render("✗ "+m.fatalAt.Title()+" failed: "+m.fatal) + "\n")
 		b.WriteString(noteStyle.Render("  quakeup is safe to re-run; finished steps are skipped. Press q to exit.") + "\n")
 	} else if m.done {
-		b.WriteString("\n  " + stepDone.Render("Ready to play!") + "\n")
-		b.WriteString(noteStyle.Render(
-			"    Quake 1:          "+m.opts.Dir+"/play-quake1.sh\n"+
-				"    Quake III Arena:  "+m.opts.Dir+"/play-quake3.sh\n"+
-				"    Mission packs:    play-quake1.sh -hipnotic | -rogue | -game mg1\n\n"+
-				"  Press q to exit.") + "\n")
+		b.WriteString("\n  " + stepDone.Render("Done!") + "\n")
+		var lines []string
+		for _, l := range [][2]string{
+			{"Quake 1:         ", "play-quake1.sh"},
+			{"QuakeWorld:      ", "play-quakeworld.sh"},
+			{"Quake III Arena: ", "play-quake3.sh"},
+		} {
+			path := m.opts.Dir + "/" + l[1]
+			if _, err := os.Stat(path); err == nil {
+				lines = append(lines, "    "+l[0]+" "+path)
+			}
+		}
+		if _, err := os.Stat(m.opts.Dir + "/server/docker-compose.yml"); err == nil {
+			lines = append(lines, "    Servers:          edit "+m.opts.Dir+"/server/.env, then docker compose up -d")
+		}
+		if m.opts.Quake1 {
+			lines = append(lines, "    Mission packs:    play-quake1.sh -hipnotic | -rogue | -game mg1")
+		}
+		b.WriteString(noteStyle.Render(strings.Join(lines, "\n")+"\n\n  Press q to exit.") + "\n")
 	} else if m.lastLog != "" {
 		log := m.lastLog
 		if max := m.width - 6; max > 10 && len(log) > max {

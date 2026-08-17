@@ -26,7 +26,7 @@ func (e *Engine) writeServerFiles(ctx context.Context) (string, error) {
 	wantQW := e.opts.NeedsQuake1Data() || verifyQuake1Data(e.quake1Dir()) == nil
 	wantQ3 := e.opts.Quake3 || verifyQuake3Data(e.quake3Dir()) == nil
 	if !wantQW && !wantQ3 {
-		return "", fmt.Errorf("no games selected or present to generate server files for")
+		return "", fmt.Errorf("no game data found in %s — re-run with --dir pointing at an existing Quake install, or also select games to download them", e.opts.Dir)
 	}
 
 	compose := composeFile(wantQW, wantQ3)

@@ -142,9 +142,20 @@ func runPlain(engine *install.Engine) bool {
 		case install.EvDone:
 			succeeded = true
 			opts := engine.Options()
-			fmt.Println("\nReady to play!")
-			fmt.Printf("  Quake 1:          %s/play-quake1.sh\n", opts.Dir)
-			fmt.Printf("  Quake III Arena:  %s/play-quake3.sh\n", opts.Dir)
+			fmt.Println("\nDone!")
+			for _, l := range []struct{ label, script string }{
+				{"Quake 1:         ", "play-quake1.sh"},
+				{"QuakeWorld:      ", "play-quakeworld.sh"},
+				{"Quake III Arena: ", "play-quake3.sh"},
+			} {
+				path := opts.Dir + "/" + l.script
+				if _, err := os.Stat(path); err == nil {
+					fmt.Printf("  %s %s\n", l.label, path)
+				}
+			}
+			if _, err := os.Stat(opts.Dir + "/server/docker-compose.yml"); err == nil {
+				fmt.Printf("  Servers:          edit %s/server/.env, then docker compose up -d\n", opts.Dir)
+			}
 		}
 	}
 	return succeeded
