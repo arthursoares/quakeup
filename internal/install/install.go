@@ -11,6 +11,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 // Application IDs and download sources. vkQuake is pinned to an immutable
@@ -21,9 +22,17 @@ const (
 	Quake1AppID = "2310"
 	Quake3AppID = "2200"
 
-	steamcmdURL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_osx.tar.gz"
+	steamcmdURLMac   = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_osx.tar.gz"
+	steamcmdURLLinux = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 	vkQuakeURL  = "https://github.com/MacSourcePorts/MSPBuildSystem/releases/download/vkQuake_1.35.0/vkQuake-1.35.0.dmg"
 	ioquake3URL = "https://files.ioquake3.org/ioquake3_notarized.zip"
+
+	// ezQuake is pinned to a versioned release and verified against the
+	// release's own checksum manifest (its .app is ad-hoc signed, so
+	// notarization checks don't apply).
+	ezQuakeZipURL = "https://github.com/QW-Group/ezquake-source/releases/download/3.6.9/ezQuake-macOS-universal.zip"
+	ezQuakeSumURL = "https://github.com/QW-Group/ezquake-source/releases/download/3.6.9/checksums.txt"
+	ezQuakeZip    = "ezQuake-macOS-universal.zip"
 
 	// Quake 3 CD keys use a restricted alphabet (2, 3, 7 and a subset of
 	// consonants); this placeholder passes local validation in builds that
@@ -41,6 +50,8 @@ const (
 	StepQuake3
 	StepVkQuake
 	StepIoquake3
+	StepEzQuake
+	StepServerFiles
 	StepWiring
 	stepCount
 )
@@ -52,6 +63,8 @@ var stepTitles = [stepCount]string{
 	"Downloading Quake III Arena",
 	"Installing vkQuake",
 	"Installing ioquake3",
+	"Installing ezQuake (QuakeWorld)",
+	"Writing server files (docker-compose)",
 	"Wiring game data",
 }
 
@@ -89,7 +102,18 @@ type Options struct {
 	SteamUser   string // pre-supplied Steam account name; prompted lazily when empty
 	EnginesOnly bool   // skip SteamCMD and game downloads
 	GamesOnly   bool   // skip engine installation
+
+	// Selection: which games and variations to set up. The caller (CLI
+	// flags or the selection screen) decides; at least one must be set.
+	Quake1      bool // Quake 2021 rerelease + vkQuake
+	Quake3      bool // Quake III Arena + ioquake3
+	EzQuake     bool // QuakeWorld deathmatch client (needs the Quake 1 Steam depot for paks)
+	ServerFiles bool // generate docker-compose files for self-hosting servers
 }
+
+// NeedsQuake1Data reports whether the Quake 1 Steam depot is required
+// (vkQuake plays from it and ezQuake borrows its classic id1 paks).
+func (o Options) NeedsQuake1Data() bool { return o.Quake1 || o.EzQuake }
 
 type Engine struct {
 	opts   Options
@@ -111,7 +135,11 @@ func New(opts Options) (*Engine, error) {
 		}
 	}
 	if opts.Q3UserData == "" {
-		opts.Q3UserData = filepath.Join(home, "Library", "Application Support", "Quake3", "baseq3")
+		if runtime.GOOS == "linux" {
+			opts.Q3UserData = filepath.Join(home, ".q3a", "baseq3")
+		} else {
+			opts.Q3UserData = filepath.Join(home, "Library", "Application Support", "Quake3", "baseq3")
+		}
 	}
 	return &Engine{opts: opts, events: make(chan Event)}, nil
 }
@@ -134,6 +162,8 @@ func (e *Engine) Run(ctx context.Context) {
 		{StepQuake3, e.downloadQuake3},
 		{StepVkQuake, e.installVkQuake},
 		{StepIoquake3, e.installIoquake3},
+		{StepEzQuake, e.installEzQuake},
+		{StepServerFiles, e.writeServerFiles},
 		{StepWiring, e.wire},
 	}
 	for _, s := range steps {

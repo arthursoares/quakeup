@@ -32,6 +32,10 @@ func main() {
 	flag.StringVar(&opts.SteamUser, "user", "", "Steam account name (prompted when needed if unset)")
 	flag.BoolVar(&opts.EnginesOnly, "engines-only", false, "only install/repair the game engines")
 	flag.BoolVar(&opts.GamesOnly, "games-only", false, "only download the game data")
+	flag.BoolVar(&opts.Quake1, "quake1", false, "install Quake (2021 rerelease) + vkQuake")
+	flag.BoolVar(&opts.Quake3, "quake3", false, "install Quake III Arena + ioquake3")
+	flag.BoolVar(&opts.EzQuake, "ezquake", false, "install ezQuake (QuakeWorld deathmatch client)")
+	flag.BoolVar(&opts.ServerFiles, "server-files", false, "generate docker-compose files for self-hosted servers")
 	flag.BoolVar(&plain, "plain", false, "plain log output instead of the interactive UI")
 	flag.BoolVar(&showVersion, "version", false, "print version and exit")
 	flag.Parse()
@@ -43,6 +47,23 @@ func main() {
 	if opts.EnginesOnly && opts.GamesOnly {
 		fmt.Fprintln(os.Stderr, "--engines-only and --games-only are mutually exclusive")
 		os.Exit(2)
+	}
+
+	// No explicit selection: show the picker in the TUI, or default to both
+	// games (the pre-selection behavior) when headless.
+	if !opts.Quake1 && !opts.Quake3 && !opts.EzQuake && !opts.ServerFiles {
+		if !plain && term.IsTerminal(int(os.Stdout.Fd())) {
+			final, err := tea.NewProgram(ui.NewSelection()).Run()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "quakeup:", err)
+				os.Exit(1)
+			}
+			if sel, isSel := final.(ui.Selection); !isSel || !sel.Apply(&opts) {
+				return // user backed out
+			}
+		} else {
+			opts.Quake1, opts.Quake3 = true, true
+		}
 	}
 
 	engine, err := install.New(opts)

@@ -81,7 +81,8 @@ func New(events <-chan install.Event, cancel context.CancelFunc, opts install.Op
 	ti.CharLimit = 128
 	order := []install.StepID{
 		install.StepPreflight, install.StepSteamCMD, install.StepQuake1,
-		install.StepQuake3, install.StepVkQuake, install.StepIoquake3, install.StepWiring,
+		install.StepQuake3, install.StepVkQuake, install.StepIoquake3,
+		install.StepEzQuake, install.StepServerFiles, install.StepWiring,
 	}
 	return Model{
 		events: events,

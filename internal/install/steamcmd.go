@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/creack/pty"
@@ -21,6 +22,9 @@ func (e *Engine) ensureSteamCMD(ctx context.Context) (string, error) {
 	if e.opts.EnginesOnly {
 		return "engines only", nil
 	}
+	if !e.opts.NeedsQuake1Data() && !e.opts.Quake3 {
+		return "no game downloads selected", nil
+	}
 	script := filepath.Join(e.steamcmdDir(), "steamcmd.sh")
 	if fileExecutable(script) {
 		return "already installed", nil
@@ -28,8 +32,12 @@ func (e *Engine) ensureSteamCMD(ctx context.Context) (string, error) {
 	if err := os.MkdirAll(e.opts.Dir, 0o755); err != nil {
 		return "", err
 	}
-	tarball := filepath.Join(e.opts.Dir, ".steamcmd_osx.tar.gz")
-	if err := e.download(ctx, StepSteamCMD, steamcmdURL, tarball); err != nil {
+	url := steamcmdURLMac
+	if runtime.GOOS == "linux" {
+		url = steamcmdURLLinux
+	}
+	tarball := filepath.Join(e.opts.Dir, ".steamcmd.tar.gz")
+	if err := e.download(ctx, StepSteamCMD, url, tarball); err != nil {
 		return "", err
 	}
 	defer os.Remove(tarball)
@@ -50,6 +58,9 @@ func (e *Engine) ensureSteamCMD(ctx context.Context) (string, error) {
 }
 
 func (e *Engine) downloadQuake1(ctx context.Context) (string, error) {
+	if !e.opts.NeedsQuake1Data() {
+		return "not selected", nil
+	}
 	if e.opts.EnginesOnly {
 		return "engines only", nil
 	}
@@ -66,6 +77,9 @@ func (e *Engine) downloadQuake1(ctx context.Context) (string, error) {
 }
 
 func (e *Engine) downloadQuake3(ctx context.Context) (string, error) {
+	if !e.opts.Quake3 {
+		return "not selected", nil
+	}
 	if e.opts.EnginesOnly {
 		return "engines only", nil
 	}

@@ -6,9 +6,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 )
 
 func (e *Engine) installVkQuake(ctx context.Context) (string, error) {
+	if !e.opts.Quake1 {
+		return "not selected", nil
+	}
 	return e.installApp(ctx, StepVkQuake, appSpec{
 		name:       "vkQuake.app",
 		executable: "vkquake",
@@ -18,6 +22,9 @@ func (e *Engine) installVkQuake(ctx context.Context) (string, error) {
 }
 
 func (e *Engine) installIoquake3(ctx context.Context) (string, error) {
+	if !e.opts.Quake3 {
+		return "not selected", nil
+	}
 	return e.installApp(ctx, StepIoquake3, appSpec{
 		name:       "ioquake3.app",
 		executable: "ioquake3",
@@ -40,6 +47,9 @@ func (a appSpec) binary(appsDir string) string {
 func (e *Engine) installApp(ctx context.Context, step StepID, spec appSpec) (string, error) {
 	if e.opts.GamesOnly {
 		return "games only", nil
+	}
+	if runtime.GOOS != "darwin" {
+		return "macOS only — on Linux install the engine from your package manager", nil
 	}
 	dest := filepath.Join(e.opts.AppsDir, spec.name)
 	// An existing bundle counts as installed only if its executable exists —
