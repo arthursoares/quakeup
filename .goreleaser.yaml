@@ -1,0 +1,39 @@
+# Release with:  GITHUB_TOKEN=$(gh auth token) goreleaser release --clean
+version: 2
+project_name: quakeup
+
+builds:
+  - id: quakeup
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    env: [CGO_ENABLED=0]
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+universal_binaries:
+  - id: quakeup
+    replace: true
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_macOS_universal"
+
+checksum:
+  name_template: checksums.txt
+
+brews:
+  - name: quakeup
+    repository:
+      owner: arthursoares
+      name: homebrew-tap
+    homepage: https://github.com/arthursoares/quakeup
+    description: "Quake and Quake III Arena on your Mac, from your own Steam copies"
+    license: MIT
+    install: |
+      bin.install "quakeup"
+    test: |
+      system "#{bin}/quakeup", "--version"
+
+release:
+  footer: |
+    Install with `brew install arthursoares/tap/quakeup`
