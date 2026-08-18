@@ -35,7 +35,9 @@ func main() {
 	flag.BoolVar(&opts.Quake1, "quake1", false, "install Quake (2021 rerelease) + vkQuake")
 	flag.BoolVar(&opts.Quake3, "quake3", false, "install Quake III Arena + ioquake3")
 	flag.BoolVar(&opts.EzQuake, "ezquake", false, "install ezQuake (QuakeWorld deathmatch client)")
+	flag.BoolVar(&opts.Extras, "extras", false, "install Quake 3 extras: CPMA, map pack, QL sounds, HD textures/weapons")
 	flag.BoolVar(&opts.ServerFiles, "server-files", false, "generate docker-compose files for self-hosted servers")
+	flag.StringVar(&opts.Q3UserData, "q3-data", "", "advanced: ioquake3 user data dir (default platform-specific)")
 	flag.BoolVar(&plain, "plain", false, "plain log output instead of the interactive UI")
 	flag.BoolVar(&showVersion, "version", false, "print version and exit")
 	flag.Parse()
@@ -51,7 +53,7 @@ func main() {
 
 	// No explicit selection: show the picker in the TUI, or default to both
 	// games (the pre-selection behavior) when headless.
-	if !opts.Quake1 && !opts.Quake3 && !opts.EzQuake && !opts.ServerFiles {
+	if !opts.Quake1 && !opts.Quake3 && !opts.EzQuake && !opts.Extras && !opts.ServerFiles {
 		if !plain && term.IsTerminal(int(os.Stdout.Fd())) {
 			final, err := tea.NewProgram(ui.NewSelection()).Run()
 			if err != nil {

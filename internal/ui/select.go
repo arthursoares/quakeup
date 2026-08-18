@@ -43,6 +43,11 @@ func NewSelection() Selection {
 			apply: func(o *install.Options) { o.Quake3 = true },
 		},
 		{
+			label: "Quake 3 extras — CPMA + community packs",
+			desc:  "competitive mod, 38 classic maps, QL sounds, HD textures & weapons",
+			apply: func(o *install.Options) { o.Extras = true },
+		},
+		{
 			label: "Server files — docker-compose",
 			desc:  "self-host QuakeWorld + Quake III servers on any Docker host",
 			apply: func(o *install.Options) { o.ServerFiles = true },

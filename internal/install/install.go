@@ -51,6 +51,7 @@ const (
 	StepVkQuake
 	StepIoquake3
 	StepEzQuake
+	StepExtras
 	StepServerFiles
 	StepWiring
 	stepCount
@@ -64,6 +65,7 @@ var stepTitles = [stepCount]string{
 	"Installing vkQuake",
 	"Installing ioquake3",
 	"Installing ezQuake (QuakeWorld)",
+	"Installing Quake 3 extras",
 	"Writing server files (docker-compose)",
 	"Wiring game data",
 }
@@ -108,6 +110,7 @@ type Options struct {
 	Quake1      bool // Quake 2021 rerelease + vkQuake
 	Quake3      bool // Quake III Arena + ioquake3
 	EzQuake     bool // QuakeWorld deathmatch client (needs the Quake 1 Steam depot for paks)
+	Extras      bool // Quake 3 extras: CPMA, map pack, QL sounds, HD textures/weapons
 	ServerFiles bool // generate docker-compose files for self-hosting servers
 }
 
@@ -163,6 +166,7 @@ func (e *Engine) Run(ctx context.Context) {
 		{StepVkQuake, e.installVkQuake},
 		{StepIoquake3, e.installIoquake3},
 		{StepEzQuake, e.installEzQuake},
+		{StepExtras, e.installExtras},
 		{StepServerFiles, e.writeServerFiles},
 		{StepWiring, e.wire},
 	}

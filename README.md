@@ -35,8 +35,26 @@ Or select non-interactively (combine freely):
 quakeup --quake1             # Quake (2021 rerelease) + vkQuake
 quakeup --quake3             # Quake III Arena + ioquake3
 quakeup --ezquake            # ezQuake, the competitive QuakeWorld client
+quakeup --extras             # Quake 3 extras: CPMA + community packs
 quakeup --server-files       # docker-compose files for self-hosted servers
 ```
+
+## Quake 3 extras
+
+`--extras` installs the community bundle, every artifact pinned by SHA-256:
+
+- **[CPMA 1.53](https://playmorepromode.com)** (Challenge ProMode Arena) — the
+  definitive competitive mod, in its own `cpma` folder; switch via the in-game
+  Mods menu or `play-quake3.sh +set fs_game cpma`
+- **CPMA map pack** — 38 classic arena maps (`cpm3a`, `cpm22`, …)
+- **Quake Live sounds** — modern hit-confirmation audio
+- **HD textures & HD weapons** — high-res cosmetic upgrades, installed as
+  `zzz-*.pk3` so they take precedence over the original paks
+
+Heads-up: extra pk3s in `baseq3` can get you rejected by strict `sv_pure`
+internet servers; your own server and LAN games are unaffected. quakeup also
+seeds an `autoexec.cfg` per installed client (FPS counter on) — the file is
+yours after creation and is never overwritten.
 
 Then:
 

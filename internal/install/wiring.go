@@ -103,12 +103,54 @@ func (e *Engine) wire(ctx context.Context) (string, error) {
 		e.log(StepWiring, "copied classic id1 paks to "+qwID1)
 	}
 
+	if err := e.seedAutoexecs(); err != nil {
+		return "", err
+	}
+
 	if runtime.GOOS == "darwin" {
 		if err := e.writeLaunchers(); err != nil {
 			return "", err
 		}
 	}
 	return "", nil
+}
+
+// seedAutoexecs creates an autoexec.cfg with sane defaults (FPS counter)
+// for each selected client. Engines only ever read this file, and quakeup
+// never overwrites an existing one — it's the user's file after creation.
+func (e *Engine) seedAutoexecs() error {
+	type seed struct {
+		enabled bool
+		path    string
+		content string
+	}
+	seeds := []seed{
+		{e.opts.Quake1 && runtime.GOOS == "darwin",
+			filepath.Join(e.quake1Dir(), "rerelease", "id1", "autoexec.cfg"),
+			"// created by quakeup — executed by vkQuake at startup\nscr_showfps 1\n"},
+		{e.opts.Quake3,
+			filepath.Join(e.opts.Q3UserData, "autoexec.cfg"),
+			"// created by quakeup — executed by ioquake3 at startup\nseta cg_drawFPS \"1\"\n"},
+		{e.opts.EzQuake && runtime.GOOS == "darwin",
+			filepath.Join(e.quakeworldDir(), "ezquake", "autoexec.cfg"),
+			"// created by quakeup — executed by ezQuake at startup\nshow_fps 1\n"},
+	}
+	for _, s := range seeds {
+		if !s.enabled {
+			continue
+		}
+		if _, err := os.Stat(s.path); err == nil {
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(s.path, []byte(s.content), 0o644); err != nil {
+			return err
+		}
+		e.log(StepWiring, "seeded "+s.path)
+	}
+	return nil
 }
 
 func (e *Engine) writeLaunchers() error {
